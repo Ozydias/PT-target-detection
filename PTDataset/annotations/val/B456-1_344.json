@@ -1,0 +1,26 @@
+{
+  "version": "4.5.7",
+  "flags": {},
+  "shapes": [
+    {
+      "label": "PT",
+      "points": [
+        [
+          677.2792792792792,
+          284.3513513513513
+        ],
+        [
+          750.2522522522522,
+          375.3423423423423
+        ]
+      ],
+      "group_id": null,
+      "shape_type": "rectangle",
+      "flags": {}
+    }
+  ],
+  "imagePath": "B456-1_344.jpg",
+  "imageData": null,
+  "imageHeight": 720,
+  "imageWidth": 1280
+}

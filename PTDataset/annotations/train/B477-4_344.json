@@ -1,0 +1,26 @@
+{
+  "version": "4.5.7",
+  "flags": {},
+  "shapes": [
+    {
+      "label": "PT",
+      "points": [
+        [
+          987.3873873873873,
+          68.72972972972971
+        ],
+        [
+          848,
+          0
+        ]
+      ],
+      "group_id": null,
+      "shape_type": "rectangle",
+      "flags": {}
+    }
+  ],
+  "imagePath": "B477-4_344.jpg",
+  "imageData": null,
+  "imageHeight": 720,
+  "imageWidth": 1280
+}

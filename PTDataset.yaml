@@ -1,0 +1,6 @@
+path: c:\Users\29199\Desktop\yolov12-main\PTDataset
+train: images/train
+val: images/val
+nc: 1
+names:
+  0: PT
