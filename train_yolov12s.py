@@ -150,7 +150,7 @@ def main():
         imgsz=640,                   # 输入图像尺寸
         device='0',                  # 使用GPU 0（如果有多个GPU，可以用 '0,1,2,3'）
         project='runs/detect',       # 项目目录
-        name='yolov12s_pt_v2',      # 新的实验名称（避免使用有问题的检查点）
+        name='yolov12s_pt_v1',      # 新的实验名称（避免使用有问题的检查点）
         exist_ok=True,               # 允许覆盖已存在的实验
         pretrained=True,             # 使用预训练权重
         optimizer='AdamW',           # 优化器
