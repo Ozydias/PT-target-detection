@@ -36,6 +36,7 @@ from ultralytics.nn.modules import (
     C3k2,
     C3x,
     CBFuse,
+    CBAM,
     CBLinear,
     Classify,
     Concat,
@@ -45,6 +46,8 @@ from ultralytics.nn.modules import (
     Detect,
     DWConv,
     DWConvTranspose2d,
+    ECA,
+    ECAModule,
     Focus,
     GhostBottleneck,
     GhostConv,
@@ -1064,6 +1067,12 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             args = [c1, c2, *args[1:]]
         elif m is CBFuse:
             c2 = ch[f[-1]]
+        elif m in {CBAM, ECA, ECAModule}:
+            # 注意力模块：使用输入通道数作为 channels 参数（考虑模型缩放）
+            # 输出通道数等于输入通道数（注意力模块不改变通道数）
+            c2 = ch[f]
+            # 使用输入通道数作为 channels 参数，确保与缩放后的通道数匹配
+            args = [c2]
         else:
             c2 = ch[f]
 

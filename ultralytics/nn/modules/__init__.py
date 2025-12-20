@@ -60,7 +60,6 @@ from .block import (
     A2C2f,
 )
 from .conv import (
-    CBAM,
     ChannelAttention,
     Concat,
     Conv,
@@ -89,6 +88,8 @@ from .transformer import (
     TransformerLayer,
 )
 
+from .attention import CBAM, ECAModule, SEModule, ECA
+
 __all__ = (
     "Conv",
     "Conv2",
@@ -101,7 +102,6 @@ __all__ = (
     "GhostConv",
     "ChannelAttention",
     "SpatialAttention",
-    "CBAM",
     "Concat",
     "TransformerLayer",
     "TransformerBlock",
@@ -163,3 +163,5 @@ __all__ = (
     "Index",
     "A2C2f"
 )
+
+__all__ = __all__ + ("CBAM", "ECAModule", "SEModule", "ECA")

@@ -127,12 +127,25 @@ def main():
         print("⚠️  检测到之前的训练结果，如果损失为0，建议使用新的实验名称重新训练")
         print("")
     
-    # 初始化模型 - 使用预训练权重（推荐，可以加速训练）
-    # YOLO会自动下载预训练权重（如果本地不存在）
+    # 初始化模型 - 从 YAML 配置文件构建（包含 CBAM 和 ECA 模块）
+    # 注意：如果使用 .pt 文件，会加载旧的模型结构，不会包含 YAML 中的新模块
     print("\n加载 YOLOv12s 模型...")
-    print("提示: 如果本地没有预训练权重，将自动从GitHub下载")
-    model = YOLO('yolov12s.pt')
-    print("✓ 成功加载模型")
+    print("提示: 从 YAML 配置文件构建模型（包含 CBAM 和 ECA 注意力模块）")
+    model = YOLO('ultralytics/cfg/models/v12/yolov12.yaml')
+    # 如果需要使用预训练权重，可以尝试加载（但权重可能不匹配）
+    # 注意：预训练权重不包含 CBAM 和 ECA 模块，所以权重加载可能会失败或跳过不匹配的层
+    try:
+        pretrained_path = script_dir / 'yolov12s.pt'
+        if pretrained_path.exists():
+            print(f"提示: 尝试加载预训练权重 {pretrained_path}")
+            print("警告: 预训练权重不包含 CBAM 和 ECA 模块，不匹配的层将被跳过")
+            model.load(str(pretrained_path), verbose=False)
+            print("✓ 部分权重加载成功（不匹配的层使用随机初始化）")
+        else:
+            print("提示: 未找到预训练权重，使用随机初始化")
+    except Exception as e:
+        print(f"提示: 预训练权重加载失败（这是正常的，因为模型结构已改变），使用随机初始化: {e}")
+    print("✓ 模型构建成功")
     
     # 训练参数
     print("\n训练参数:")
@@ -150,7 +163,7 @@ def main():
         imgsz=640,                   # 输入图像尺寸
         device='0',                  # 使用GPU 0（如果有多个GPU，可以用 '0,1,2,3'）
         project='runs/detect',       # 项目目录
-        name='yolov12s_pt_v1',      # 新的实验名称（避免使用有问题的检查点）
+        name='yolov12s_pt_v2',      # 新的实验名称（避免使用有问题的检查点）
         exist_ok=True,               # 允许覆盖已存在的实验
         pretrained=True,             # 使用预训练权重
         optimizer='AdamW',           # 优化器
