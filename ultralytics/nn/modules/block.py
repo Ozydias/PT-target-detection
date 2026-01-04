@@ -50,6 +50,7 @@ __all__ = (
     "PSA",
     "SCDown",
     "TorchVision",
+    "BiFPN",
 )
 
 
@@ -1367,3 +1368,64 @@ class A2C2f(nn.Module):
         if self.gamma is not None:
             return x + self.gamma.view(1, -1, 1, 1) * self.cv2(torch.cat(y, 1))
         return self.cv2(torch.cat(y, 1))
+
+
+class BiFPN(nn.Module):
+    def __init__(self, channels, eps=1e-4, ch_in=None):
+        """
+        BiFPN (Bidirectional Feature Pyramid Network) module.
+        
+        Args:
+            channels (int): 输出通道数
+            eps (float): 防止除零的小值
+            ch_in (list): 输入通道数列表，如果为 None 则在首次 forward 时自动检测
+        """
+        super().__init__()
+        self.w1 = nn.Parameter(torch.ones(2, dtype=torch.float32))
+        self.eps = eps
+        self.channels = channels
+        self.ch_in = ch_in
+        
+        # 如果提供了输入通道数，则创建卷积层
+        if ch_in is not None and len(ch_in) == 2:
+            self.conv1 = Conv(ch_in[0], channels, 1, 1)
+            self.conv2 = Conv(ch_in[1], channels, 1, 1)
+        else:
+            # 延迟初始化，在第一次 forward 时创建
+            self.conv1 = None
+            self.conv2 = None
+        
+        self.conv = Conv(channels, channels, 3, 1)
+
+    def forward(self, x):
+        if isinstance(x, list):
+            x1, x2 = x
+        else:
+            raise ValueError(f"BiFPN expects a list of 2 tensors, got {type(x)}")
+        
+        # 延迟初始化卷积层（如果还没有初始化）
+        if self.conv1 is None:
+            self.conv1 = Conv(x1.shape[1], self.channels, 1, 1).to(x1.device)
+        if self.conv2 is None:
+            self.conv2 = Conv(x2.shape[1], self.channels, 1, 1).to(x2.device)
+        
+        # 统一通道数和空间尺寸
+        # 使用 x1 的空间尺寸作为目标尺寸
+        target_size = x1.shape[2:]
+        
+        # 处理 x1：调整通道数
+        if x1.shape[1] != self.channels:
+            x1 = self.conv1(x1)
+        
+        # 处理 x2：调整通道数和空间尺寸
+        if x2.shape[1] != self.channels:
+            x2 = self.conv2(x2)
+        if x2.shape[2:] != target_size:
+            x2 = F.interpolate(x2, size=target_size, mode='nearest')
+        
+        # 加权融合
+        w1 = torch.relu(self.w1)
+        w1 = w1 / (w1.sum() + self.eps)
+        out = w1[0] * x1 + w1[1] * x2
+        return self.conv(out)
+

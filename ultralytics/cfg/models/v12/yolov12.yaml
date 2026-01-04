@@ -1,72 +1,50 @@
-# YOLOv12 + P2 Small Object Enhancement
-# Author: 徐文彬（建议你论文里署名）
-# Task: Small object detection (Parathyroid)
+# YOLOv12 🚀, AGPL-3.0 license
+# YOLOv12 object detection model with P3-P5 outputs. For Usage examples see https://docs.ultralytics.com/tasks/detect
+# CFG file for YOLOv12-turbo
 
-# =====================
 # Parameters
-# =====================
-nc: 1  # number of classes（记得换成你自己的）
-scales:
-  n: [0.50, 0.25, 1024]
-  s: [0.50, 0.50, 1024]
-  m: [0.50, 1.00, 512]
-  l: [1.00, 1.00, 512]
-  x: [1.00, 1.50, 512]
+nc: 80 # number of classes
+scales: # model compound scaling constants, i.e. 'model=yolov12n.yaml' will call yolov12.yaml with scale 'n'
+  # [depth, width, max_channels]
+  n: [0.50, 0.25, 1024] # summary: 497 layers, 2,553,904 parameters, 2,553,888 gradients, 6.2 GFLOPs
+  s: [0.50, 0.50, 1024] # summary: 497 layers, 9,127,424 parameters, 9,127,408 gradients, 19.7 GFLOPs
+  m: [0.50, 1.00, 512] # summary: 533 layers, 19,670,784 parameters, 19,670,768 gradients, 60.4 GFLOPs
+  l: [1.00, 1.00, 512] # summary: 895 layers, 26,506,496 parameters, 26,506,480 gradients, 83.3 GFLOPs
+  x: [1.00, 1.50, 512] # summary: 895 layers, 59,414,176 parameters, 59,414,160 gradients, 185.9 GFLOPs
 
-# =====================
-# Backbone
-# =====================
+
+# YOLO12-turbo backbone
 backbone:
   # [from, repeats, module, args]
-
-  - [-1, 1, Conv,  [64, 3, 2]]              # 0 - P1 /2
-  - [-1, 1, Conv,  [128, 3, 2, 1, 2]]       # 1 - P2 /4 ⭐（小目标关键层）
+  - [-1, 1, Conv,  [64, 3, 2]] # 0-P1/2
+  - [-1, 1, Conv,  [128, 3, 2, 1, 2]] # 1-P2/4
   - [-1, 2, C3k2,  [256, False, 0.25]]
-
-  - [-1, 1, Conv,  [256, 3, 2, 1, 4]]       # 3 - P3 /8
+  - [-1, 1, Conv,  [256, 3, 2, 1, 4]] # 3-P3/8
   - [-1, 2, C3k2,  [512, False, 0.25]]
-
-  - [-1, 1, Conv,  [512, 3, 2]]             # 5 - P4 /16
+  - [-1, 1, Conv,  [512, 3, 2]] # 5-P4/16
   - [-1, 4, A2C2f, [512, True, 4]]
+  - [-1, 1, Conv,  [1024, 3, 2]] # 7-P5/32
+  - [-1, 4, A2C2f, [1024, True, 1]] # 8
 
-  - [-1, 1, Conv,  [1024, 3, 2]]            # 7 - P5 /32
-  - [-1, 4, A2C2f, [1024, True, 1]]
 
-# =====================
-# Head (PAN + P2)
-# =====================
+# YOLO12-turbo head
 head:
-  # -------- P5 → P4 --------
   - [-1, 1, nn.Upsample, [None, 2, "nearest"]]
-  - [[-1, 6], 1, Concat, [1]]
-  - [-1, 2, A2C2f, [512, False, -1]]        # P4
+  - [[-1, 6], 1, BiFPN, [512]] # cat backbone P4
+  - [-1, 2, A2C2f, [512, False, -1]] # 11
 
-  # -------- P4 → P3 --------
   - [-1, 1, nn.Upsample, [None, 2, "nearest"]]
-  - [[-1, 4], 1, Concat, [1]]
-  - [-1, 2, A2C2f, [256, False, -1]]        # P3
+  - [[-1, 6], 1, BiFPN, [512]] # cat backbone P3
+  - [-1, 2, A2C2f, [256, False, -1]] # 14
 
-  # -------- P3 → P2 ⭐ 新增 --------
-  - [-1, 1, nn.Upsample, [None, 2, "nearest"]]
-  - [[-1, 1], 1, Concat, [1]]               # concat backbone P2
-  - [-1, 2, A2C2f, [256, False, -1]]        # P2（小目标检测层）- 使用256确保所有scale下通道数满足要求
-
-  # -------- 下采样回 P3 --------
-  - [-1, 1, Conv, [128, 3, 2]]
-  - [[-1, 13], 1, Concat, [1]]
-  - [-1, 2, A2C2f, [256, False, -1]]        # P3 refine
-
-  # -------- 下采样回 P4 --------
   - [-1, 1, Conv, [256, 3, 2]]
-  - [[-1, 10], 1, Concat, [1]]
-  - [-1, 2, A2C2f, [512, False, -1]]        # P4 refine
+  - [[-1, 6], 1, BiFPN, [512]] # cat head P4
+  - [-1, 2, A2C2f, [512, False, -1]] # 17
 
-  # -------- 下采样回 P5 --------
   - [-1, 1, Conv, [512, 3, 2]]
-  - [[-1, 8], 1, Concat, [1]]
-  - [-1, 2, C3k2, [1024, True]]             # P5 refine
+  - [[-1, 6], 1, BiFPN, [512]] # cat head P5
+  - [-1, 2, C3k2, [1024, True]] # 20 (P5/32-large)
 
-  # =====================
-  # Detect (P2, P3, P4, P5)
-  # =====================
-  - [[16, 19, 22, 25], 1, Detect, [nc]]
+  - [[14, 17, 20], 1, Detect, [nc]] # Detect(P3, P4, P5)
+
+

@@ -49,8 +49,11 @@ class CBAM(nn.Module):
         )
 
     def forward(self, x):
-        x_out = self.channel_attention(x)
+        # ↓↓↓ 第一步：Fout' = Fin ⊗ Ac (通道注意力)
+        x_out = self.channel_attention(x)  # ← 第52行：实现 Fin ⊗ Ac
+        # 准备空间注意力的输入
         avg_out = torch.mean(x_out, dim=1, keepdim=True)
         max_out = torch.max(x_out, dim=1, keepdim=True)[0]
         sa = self.spatial_attention(torch.cat([avg_out, max_out], dim=1))
-        return x_out * sa
+         # ↓↓↓ 第二步：Fout = Fout' ⊗ As = (Fin ⊗ Ac) ⊗ As
+        return x_out * sa     # ← 第56行：实现 Fout = Fin ⊗ Ac ⊗ As
